@@ -2,37 +2,38 @@ import os
 import cv2
 import sys
 import argparse
+from rknnlite.api import RKNNLite
+from scipy.special import softmax
 
-# add path
-realpath = os.path.abspath(__file__)
-_sep = os.path.sep
-realpath = realpath.split(_sep)
-sys.path.append(os.path.join(realpath[0]+_sep, *realpath[1:realpath.index('rknn_model_zoo')+1]))
 
-from py_utils.coco_utils import COCO_test_helper
+from coco_utils import COCO_test_helper
 import numpy as np
-
 
 OBJ_THRESH = 0.25
 NMS_THRESH = 0.45
 
-# The follew two param is for map test
-# OBJ_THRESH = 0.001
-# NMS_THRESH = 0.65
 
 IMG_SIZE = (640, 640)  # (width, height), such as (1280, 736)
 
-CLASSES = ("person", "bicycle", "car","motorbike ","aeroplane ","bus ","train","truck ","boat","traffic light",
-           "fire hydrant","stop sign ","parking meter","bench","bird","cat","dog ","horse ","sheep","cow","elephant",
-           "bear","zebra ","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite",
-           "baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife ",
-           "spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza ","donut","cake","chair","sofa",
-           "pottedplant","bed","diningtable","toilet ","tvmonitor","laptop	","mouse	","remote ","keyboard ","cell phone","microwave ",
-           "oven ","toaster","sink","refrigerator ","book","clock","vase","scissors ","teddy bear ","hair drier", "toothbrush ")
+CLASSES = ("person", "bicycle", "car", "motorbike ", "aeroplane ", "bus ", "train", "truck ", "boat", "traffic light",
+           "fire hydrant", "stop sign ", "parking meter", "bench", "bird", "cat", "dog ", "horse ", "sheep", "cow",
+           "elephant",
+           "bear", "zebra ", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis",
+           "snowboard", "sports ball", "kite",
+           "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup",
+           "fork", "knife ",
+           "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza ", "donut",
+           "cake", "chair", "sofa",
+           "pottedplant", "bed", "diningtable", "toilet ", "tvmonitor", "laptop	", "mouse	", "remote ",
+           "keyboard ", "cell phone", "microwave ",
+           "oven ", "toaster", "sink", "refrigerator ", "book", "clock", "vase", "scissors ", "teddy bear ",
+           "hair drier", "toothbrush ")
 
-coco_id_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34,
-         35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
-         64, 65, 67, 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90]
+coco_id_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 31, 32,
+                33, 34,
+                35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61,
+                62, 63,
+                64, 65, 67, 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90]
 
 
 def filter_boxes(boxes, box_confidences, box_class_probs):
@@ -44,13 +45,14 @@ def filter_boxes(boxes, box_confidences, box_class_probs):
     class_max_score = np.max(box_class_probs, axis=-1)
     classes = np.argmax(box_class_probs, axis=-1)
 
-    _class_pos = np.where(class_max_score* box_confidences >= OBJ_THRESH)
-    scores = (class_max_score* box_confidences)[_class_pos]
+    _class_pos = np.where(class_max_score * box_confidences >= OBJ_THRESH)
+    scores = (class_max_score * box_confidences)[_class_pos]
 
     boxes = boxes[_class_pos]
     classes = classes[_class_pos]
 
     return boxes, classes, scores
+
 
 def nms_boxes(boxes, scores):
     """Suppress non-maximal boxes.
@@ -85,18 +87,18 @@ def nms_boxes(boxes, scores):
     keep = np.array(keep)
     return keep
 
+
 def dfl(position):
-    # Distribution Focal Loss (DFL)
-    import torch
-    x = torch.tensor(position)
-    n,c,h,w = x.shape
+    x = np.array(position)
+    n, c, h, w = x.shape
     p_num = 4
-    mc = c//p_num
-    y = x.reshape(n,p_num,mc,h,w)
-    y = y.softmax(2)
-    acc_metrix = torch.tensor(range(mc)).float().reshape(1,1,mc,1,1)
-    y = (y*acc_metrix).sum(2)
-    return y.numpy()
+    mc = c // p_num
+    y = x.reshape(n, p_num, mc, h, w)
+    y = softmax(y, axis=2)
+    acc_metrix = np.arange(mc, dtype=float).reshape(1, 1, mc, 1, 1)
+    y = (y * acc_metrix).sum(2)
+
+    return y
 
 
 def box_process(position):
@@ -105,28 +107,29 @@ def box_process(position):
     col = col.reshape(1, 1, grid_h, grid_w)
     row = row.reshape(1, 1, grid_h, grid_w)
     grid = np.concatenate((col, row), axis=1)
-    stride = np.array([IMG_SIZE[1]//grid_h, IMG_SIZE[0]//grid_w]).reshape(1,2,1,1)
+    stride = np.array([IMG_SIZE[1] // grid_h, IMG_SIZE[0] // grid_w]).reshape(1, 2, 1, 1)
 
     position = dfl(position)
-    box_xy  = grid +0.5 -position[:,0:2,:,:]
-    box_xy2 = grid +0.5 +position[:,2:4,:,:]
-    xyxy = np.concatenate((box_xy*stride, box_xy2*stride), axis=1)
+    box_xy = grid + 0.5 - position[:, 0:2, :, :]
+    box_xy2 = grid + 0.5 + position[:, 2:4, :, :]
+    xyxy = np.concatenate((box_xy * stride, box_xy2 * stride), axis=1)
 
     return xyxy
 
+
 def post_process(input_data):
     boxes, scores, classes_conf = [], [], []
-    defualt_branch=3
-    pair_per_branch = len(input_data)//defualt_branch
+    defualt_branch = 3
+    pair_per_branch = len(input_data) // defualt_branch
     # Python 忽略 score_sum 输出
     for i in range(defualt_branch):
-        boxes.append(box_process(input_data[pair_per_branch*i]))
-        classes_conf.append(input_data[pair_per_branch*i+1])
-        scores.append(np.ones_like(input_data[pair_per_branch*i+1][:,:1,:,:], dtype=np.float32))
+        boxes.append(box_process(input_data[pair_per_branch * i]))
+        classes_conf.append(input_data[pair_per_branch * i + 1])
+        scores.append(np.ones_like(input_data[pair_per_branch * i + 1][:, :1, :, :], dtype=np.float32))
 
     def sp_flatten(_in):
         ch = _in.shape[1]
-        _in = _in.transpose(0,2,3,1)
+        _in = _in.transpose(0, 2, 3, 1)
         return _in.reshape(-1, ch)
 
     boxes = [sp_flatten(_v) for _v in boxes]
@@ -165,31 +168,17 @@ def post_process(input_data):
 
 
 def draw(image, boxes, scores, classes):
-    for box, score, cl in zip(boxes, scores, classes):
-        top, left, right, bottom = [int(_b) for _b in box]
-        print("%s @ (%d %d %d %d) %.3f" % (CLASSES[cl], top, left, right, bottom, score))
-        cv2.rectangle(image, (top, left), (right, bottom), (255, 0, 0), 2)
-        cv2.putText(image, '{0} {1:.2f}'.format(CLASSES[cl], score),
-                    (top, left - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+    classes_set = list(set(classes))
+    for boxe, score, classe in zip(boxes, scores, classes):
+        classe_index = classes_set.index(classe)
+        color = [(0,255,0), (0,0,255), (147,20,255)]
+        top, left, right, bottom = [int(_b) for _b in boxe]
+        print("%s @ (%d %d %d %d) %.3f" % (CLASSES[classe], top, left, right, bottom, score))
+        cv2.rectangle(image, (top, left), (right, bottom), color[classe_index % 3], 2)
+        cv2.putText(image, '{0} {1:.2f}'.format(CLASSES[classe], score),
+                    (top, left - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color[classe_index % 3], 2)
 
-def setup_model(args):
-    model_path = args.model_path
-    if model_path.endswith('.pt') or model_path.endswith('.torchscript'):
-        platform = 'pytorch'
-        from py_utils.pytorch_executor import Torch_model_container
-        model = Torch_model_container(args.model_path)
-    elif model_path.endswith('.rknn'):
-        platform = 'rknn'
-        from py_utils.rknn_executor import RKNN_model_container 
-        model = RKNN_model_container(args.model_path, args.target, args.device_id)
-    elif model_path.endswith('onnx'):
-        platform = 'onnx'
-        from py_utils.onnx_executor import ONNX_model_container
-        model = ONNX_model_container(args.model_path)
-    else:
-        assert False, "{} is not rknn/pytorch/onnx model".format(model_path)
-    print('Model-{} is {} model, starting val'.format(model_path, platform))
-    return model, platform
+
 
 def img_check(path):
     img_type = ['.jpg', '.jpeg', '.png', '.bmp']
@@ -198,26 +187,38 @@ def img_check(path):
             return True
     return False
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
-    # basic params
-    parser.add_argument('--model_path', type=str, required= True, help='model path, could be .pt or .rknn file')
-    parser.add_argument('--target', type=str, default='rk3566', help='target RKNPU platform')
-    parser.add_argument('--device_id', type=str, default=None, help='device id')
-    
-    parser.add_argument('--img_show', action='store_true', default=False, help='draw the result and show')
-    parser.add_argument('--img_save', action='store_true', default=False, help='save the result')
-
-    # data params
-    parser.add_argument('--anno_json', type=str, default='../../../datasets/COCO/annotations/instances_val2017.json', help='coco annotation path')
-    # coco val folder: '../../../datasets/COCO//val2017'
-    parser.add_argument('--img_folder', type=str, default='../model', help='img folder path')
-    parser.add_argument('--coco_map_test', action='store_true', help='enable coco map test')
+    # # basic params
+    parser.add_argument('--model_path', type=str, default='./model/yolov8n.rknn', help='model path, could be .pt or .rknn file')
+    parser.add_argument('--target', type=str, default='rk3588', help='target RKNPU platform')
+    parser.add_argument('--img_folder', type=str, default='./imgs', help='img folder for inference')
+    parser.add_argument('--img_save', action='store_true', default=True, help='save the result')
 
     args = parser.parse_args()
-
+    print(vars(args))
     # init model
-    model, platform = setup_model(args)
+    rknn_lite = RKNNLite()
+
+    print('--> Load RKNN model')
+    ret = rknn_lite.load_rknn(args.model_path)
+    if ret != 0:
+        print('Load RKNN model failed')
+        exit(ret)
+    print('done')
+
+    print('--> Init runtime environment')
+    if args.target == 'rk3588':
+        ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_0)
+    else:
+        ret = rknn_lite.init_runtime()
+
+    if ret != 0:
+        print('Init runtime environment failed')
+        exit(ret)
+    print('done')
+
 
     file_list = sorted(os.listdir(args.img_folder))
     img_list = []
@@ -228,7 +229,7 @@ if __name__ == '__main__':
 
     # run test
     for i in range(len(img_list)):
-        print('infer {}/{}'.format(i+1, len(img_list)), end='\r')
+        print('infer {}/{}'.format(i + 1, img_list[i]), end='\r')
 
         img_name = img_list[i]
         img_path = os.path.join(args.img_folder, img_name)
@@ -240,30 +241,20 @@ if __name__ == '__main__':
         if img_src is None:
             continue
 
-        '''
-        # using for test input dumped by C.demo
-        img_src = np.fromfile('./input_b/demo_c_input_hwc_rgb.txt', dtype=np.uint8).reshape(640,640,3)
-        img_src = cv2.cvtColor(img_src, cv2.COLOR_RGB2BGR)
-        '''
-
         # Due to rga init with (0,0,0), we using pad_color (0,0,0) instead of (114, 114, 114)
-        pad_color = (0,0,0)
-        img = co_helper.letter_box(im= img_src.copy(), new_shape=(IMG_SIZE[1], IMG_SIZE[0]), pad_color=(0,0,0))
+        pad_color = (0, 0, 0)
+        img = co_helper.letter_box(im=img_src.copy(), new_shape=(IMG_SIZE[1], IMG_SIZE[0]), pad_color=(0, 0, 0))
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = np.expand_dims(img, 0)
 
-        # preprocee if not rknn model
-        if platform in ['pytorch', 'onnx']:
-            input_data = img.transpose((2,0,1))
-            input_data = input_data.reshape(1,*input_data.shape).astype(np.float32)
-            input_data = input_data/255.
-        else:
-            input_data = img
 
-        outputs = model.run([input_data])
+        input_data = img
+        print('--> Running model ')
+        outputs = rknn_lite.inference(inputs=[input_data])
         boxes, classes, scores = post_process(outputs)
 
-        if args.img_show or args.img_save:
-            print('\n\nIMG: {}'.format(img_name))
+        if args.img_save:
+            print('IMG: {}'.format(img_list[i]))
             img_p = img_src.copy()
             if boxes is not None:
                 draw(img_p, co_helper.get_real_box(boxes), scores, classes)
@@ -273,30 +264,6 @@ if __name__ == '__main__':
                     os.mkdir('./result')
                 result_path = os.path.join('./result', img_name)
                 cv2.imwrite(result_path, img_p)
-                print('Detection result save to {}'.format(result_path))
-                        
-            if args.img_show:
-                cv2.imshow("full post process result", img_p)
-                cv2.waitKeyEx(0)
-
-        # record maps
-        if args.coco_map_test is True:
-            if boxes is not None:
-                for i in range(boxes.shape[0]):
-                    co_helper.add_single_record(image_id = int(img_name.split('.')[0]),
-                                                category_id = coco_id_list[int(classes[i])],
-                                                bbox = boxes[i],
-                                                score = round(scores[i], 5).astype(np.float)
-                                                )
-
-    # calculate maps
-    if args.coco_map_test is True:
-        pred_json = args.model_path.split('.')[-2]+ '_{}'.format(platform) +'.json'
-        pred_json = pred_json.split('/')[-1]
-        pred_json = os.path.join('./', pred_json)
-        co_helper.export_to_json(pred_json)
-
-        from py_utils.coco_utils import coco_eval_with_json
-        coco_eval_with_json(args.anno_json, pred_json)
+                print('Detection result save to {}\n'.format(result_path))
 
 
