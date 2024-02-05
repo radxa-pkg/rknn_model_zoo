@@ -1,0 +1,5 @@
+rknn-model-zoo (1.6.0-1) bullseye; urgency=medium
+
+  * Initial release.
+
+ -- "Radxa Computer Co., Ltd" <dev@radxa.com>  Mon, 5 Feb 2024 14:12:38 +0800

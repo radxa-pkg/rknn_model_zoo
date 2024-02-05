@@ -1,0 +1,74 @@
+Source: rknn-model-zoo
+Section: devel
+Priority: optional
+Maintainer: "Radxa Computer Co., Ltd" <dev@radxa.com>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper-compat (= 13),
+ devscripts,
+ dh-exec,
+ libglib2.0-0,
+ lintian,
+ mesa-utils,
+ python3,
+ python3-numpy,
+ python3-pip,
+ wget,
+Standards-Version: 4.6.2
+Homepage: https://github.com/airockchip/rknn_model_zoo
+
+Package: rknn-model-zoo-common
+Architecture: all
+Recommends:
+ python3-numpy,
+ python3-opencv,
+ python3-rknnlite2,
+ python3-scipy,
+ python3-torch,
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+Description: RKNN Model Zoo Common Files
+ RKNN Model Zoo is developed based on the RKNPU SDK toolchain 
+ and provides deployment examples for current mainstream algorithms. 
+ Include the process of exporting the RKNN model 
+ and using Python API and CAPI to infer the RKNN model.
+
+Package: rknn-model-zoo-rk3588
+Architecture: all
+Depends:
+ rknn-model-zoo-common,
+ rknpu2-rk3588,
+ ${shlibs:Depends},
+ ${misc:Depends},
+Description: RKNN Model Zoo for RK3588
+ RKNN Model Zoo is developed based on the RKNPU SDK toolchain 
+ and provides deployment examples for current mainstream algorithms. 
+ Include the process of exporting the RKNN model 
+ and using Python API and CAPI to infer the RKNN model.
+
+Package: rknn-model-zoo-rk3568
+Architecture: all
+Depends:
+ rknn-model-zoo-common,
+ rknpu2-rk356x,
+ ${shlibs:Depends},
+ ${misc:Depends},
+Description: RKNN Model Zoo for RK3568
+ RKNN Model Zoo is developed based on the RKNPU SDK toolchain 
+ and provides deployment examples for current mainstream algorithms. 
+ Include the process of exporting the RKNN model 
+ and using Python API and CAPI to infer the RKNN model.
+
+Package: rknn-model-zoo-rk3566
+Architecture: all
+Depends:
+ rknn-model-zoo-common,
+ rknpu2-rk356x,
+ ${shlibs:Depends},
+ ${misc:Depends},
+Description: RKNN Model Zoo for RK3566
+ RKNN Model Zoo is developed based on the RKNPU SDK toolchain 
+ and provides deployment examples for current mainstream algorithms. 
+ Include the process of exporting the RKNN model 
+ and using Python API and CAPI to infer the RKNN model.

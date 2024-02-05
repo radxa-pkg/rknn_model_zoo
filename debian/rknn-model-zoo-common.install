@@ -1,0 +1,6 @@
+#! /usr/bin/dh-exec
+
+datasets/ /usr/share/rknn_model_zoo/ 
+py_utils/ /usr/share/rknn_model_zoo/    
+examples/yolov8/model/ /usr/share/rknn_model_zoo/examples/yolov8/
+examples/yolov8/python/ /usr/share/rknn_model_zoo/examples/yolov8/
