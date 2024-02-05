@@ -1,0 +1,3 @@
+#!/usr/bin/dh-exec
+
+install/examples/yolov8/model/yolov8_rk3566.rknn => /usr/share/rknn_model_zoo/examples/yolov8/model/yolov8.rknn

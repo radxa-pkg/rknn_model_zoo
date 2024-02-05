@@ -1,0 +1,13 @@
+diff --git a/examples/yolov8/python/yolov8.py b/../rknn_model_zoo/examples/yolov8/python/yolov8.py
+index 164b8d2..cd399d6 100644
+--- a/examples/yolov8/python/yolov8.py
++++ b/examples/yolov8/python/yolov8.py
+@@ -256,6 +268,8 @@ if __name__ == '__main__':
+             input_data = img.transpose((2,0,1))
+             input_data = input_data.reshape(1,*input_data.shape).astype(np.float32)
+             input_data = input_data/255.
++        elif platform in ['rknn']:
++            input_data = np.expand_dims(img, 0)
+         else:
+             input_data = img
+ 

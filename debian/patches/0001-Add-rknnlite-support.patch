@@ -1,0 +1,24 @@
+diff --git a/py_utils/rknn_executor.py b/py_utils/rknn_executor.py
+index db463d7..03b44d8 100644
+--- a/py_utils/rknn_executor.py
++++ b/py_utils/rknn_executor.py
+@@ -1,4 +1,9 @@
+-from rknn.api import RKNN
++try:
++    from rknn.api import RKNN
++except ImportError:
++    print('import rknn failed,try to import rknnlite')
++    RKNNLite = True
++    from rknnlite.api import RKNNLite as RKNN
+ 
+ 
+ class RKNN_model_container():
+@@ -9,7 +14,7 @@ class RKNN_model_container():
+         rknn.load_rknn(model_path)
+ 
+         print('--> Init runtime environment')
+-        if target==None:
++        if RKNNLite or target==None:
+             ret = rknn.init_runtime()
+         else:
+             ret = rknn.init_runtime(target=target, device_id=device_id)
